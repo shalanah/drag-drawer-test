@@ -12,40 +12,23 @@ const App = () => {
   return (
     <MainContainer>
       <span>here</span>
-      <DragDrawer overflowHeight={200}>
-        <div
-          style={{
-            position: 'absolute',
-            width: '100%',
-            bottom: 0,
-            top: 0,
-            background: '#ccc',
-            overflow: 'hidden'
-          }}
-        >
-          <div data-pull style={{ padding: '20px' }}>
-            Pull here
-          </div>
+      <DragDrawer
+        style={{ background: '#ccc', zIndex: 100 }}
+        overflowHeight={200}
+        dragElem={<div style={{ padding: '20px' }}>Pull here</div>}
+        content={
           <div
             style={{
-              height: '100%',
               padding: '20px',
-              overflow: 'auto',
-              background: '#ccc'
+              height: '200vh',
+              background:
+                'linear-gradient(#ccc, red, orange, yellow, green, cyan, blue, violet, black)'
             }}
           >
-            <div
-              style={{
-                height: '200vh',
-                background:
-                  'linear-gradient(#ccc, red, orange, yellow, green, cyan, blue, violet, black)'
-              }}
-            >
-              content
-            </div>
+            content
           </div>
-        </div>
-      </DragDrawer>
+        }
+      />
     </MainContainer>
   )
 }
