@@ -7,7 +7,8 @@ const OPEN_NAV_SIZE = 0.75
 const Container = styled(animated.div)`
   position: absolute;
   width: 100%;
-  height: 100%;
+  display: flex;
+  flex-direction: column;
 `
 const dragClassName = 'drag-drawer-container'
 const draggingOnHandle = (element) => {
@@ -107,13 +108,14 @@ const DragDrawer = ({
       ref={refContainer}
       {...useDragBind()}
       style={{
+        height: OPEN_NAV_SIZE * windowHeight,
         transform: styleProps.y.interpolate(trans),
         top: styleProps.top.interpolate(topInterpolate),
         ...style
       }}
     >
       <div className={dragClassName}>{dragElem}</div>
-      <div style={{ overflowY: 'scroll', height: '100%' }}>{content}</div>
+      <div style={{ overflowY: 'scroll', flex: 1 }}>{content}</div>
     </Container>
   )
 }

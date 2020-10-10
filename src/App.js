@@ -19,7 +19,7 @@ const App = () => {
         content={
           <div
             style={{
-              padding: '20px',
+              padding: '0px 20px',
               height: '200vh',
               background:
                 'linear-gradient(#ccc, red, orange, yellow, green, cyan, blue, violet, black)'
