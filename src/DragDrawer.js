@@ -9,27 +9,28 @@ const Container = styled(animated.div)`
   width: 100%;
   display: flex;
   flex-direction: column;
+  bottom: 0px;
 `
 
 const clamp = (num, min, max) => Math.max(Math.min(max, num), min)
-const dragClassName = 'drag-drawer-container'
-const draggingOnHandle = (element) => {
-  let dragElems = document.getElementsByClassName(dragClassName)
-  const len = dragElems.length
-  for (let i = 0; i < len; i++) {
-    let dragElem = dragElems[i]
-    if (dragElem === element || dragElem.contains(element)) {
-      // release elements from memory for good measure (possibly not needed)
-      dragElems = null
-      dragElem = null
-      return true // is the drag element or a child of the drag element
-    }
-    dragElem = null
-  }
-  // release elements from memory for good measure (possibly not needed)
-  dragElems = null
-  return false
-}
+// const dragClassName = 'drag-drawer-container'
+// const draggingOnHandle = (element) => {
+//   let dragElems = document.getElementsByClassName(dragClassName)
+//   const len = dragElems.length
+//   for (let i = 0; i < len; i++) {
+//     let dragElem = dragElems[i]
+//     if (dragElem === element || dragElem.contains(element)) {
+//       // release elements from memory for good measure (possibly not needed)
+//       dragElems = null
+//       dragElem = null
+//       return true // is the drag element or a child of the drag element
+//     }
+//     dragElem = null
+//   }
+//   // release elements from memory for good measure (possibly not needed)
+//   dragElems = null
+//   return false
+// }
 
 const DragDrawer = ({
   content,
@@ -46,7 +47,7 @@ const DragDrawer = ({
   const openHeight = windowHeight * NAV_PERCENT
 
   const [styleProps, set] = useSpring(() => ({
-    y: 0,
+    y: openHeight - overflowHeight,
     config: {
       mass: 1,
       tension: 350,
@@ -71,10 +72,10 @@ const DragDrawer = ({
         y0.current = Number(
           refContainer.current.style.transform.split('(')[1].split('px')[0]
         )
-      const openY = -(openHeight - overflowHeight)
-      const closeY = 0
-      const max = overflowHeight - 10 // near bottom of screen
-      const min = openY - 10
+      const openY = 0
+      const closeY = openHeight - overflowHeight
+      const min = openY - 20
+      const max = openHeight - 20
       let y = clamp(my + y0.current, min, max)
       if (last) {
         const threshold = clamp(windowHeight * 0.1, 5, 300)
@@ -102,13 +103,16 @@ const DragDrawer = ({
       ref={refContainer}
       {...useDragBind()}
       style={{
-        top: windowHeight - overflowHeight,
         height: openHeight,
         transform: styleProps.y.to((y) => `translateY(${y}px)`),
         ...style
       }}
     >
-      <div className={dragClassName}>{dragElem}</div>
+      <div
+      // className={dragClassName}
+      >
+        {dragElem}
+      </div>
       <div style={{ overflowY: 'scroll', flex: 1 }}>{content}</div>
       {footer && <div>{footer}</div>}
     </Container>
