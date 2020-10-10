@@ -3,21 +3,31 @@ import { useSpring, animated } from 'react-spring'
 import { useDrag } from 'react-use-gesture'
 import styled from 'styled-components'
 
-const OPEN_NAV_SIZE = 0.75
+const NAV_PERCENT = 0.75
 const Container = styled(animated.div)`
   position: absolute;
   width: 100%;
   display: flex;
   flex-direction: column;
 `
+
+const clamp = (num, min, max) => Math.max(Math.min(max, num), min)
 const dragClassName = 'drag-drawer-container'
 const draggingOnHandle = (element) => {
-  const len = document.getElementsByClassName(dragClassName).length
+  let dragElems = document.getElementsByClassName(dragClassName)
+  const len = dragElems.length
   for (let i = 0; i < len; i++) {
-    let pullElement = document.getElementsByClassName(dragClassName)[i]
-    if (pullElement === element || pullElement.contains(element)) return true
-    pullElement = null // clear out
+    let dragElem = dragElems[i]
+    if (dragElem === element || dragElem.contains(element)) {
+      // release elements from memory for good measure (possibly not needed)
+      dragElems = null
+      dragElem = null
+      return true // is the drag element or a child of the drag element
+    }
+    dragElem = null
   }
+  // release elements from memory for good measure (possibly not needed)
+  dragElems = null
   return false
 }
 
@@ -32,74 +42,59 @@ const DragDrawer = ({
 }) => {
   const [open, setOpen] = useState(false)
   const refContainer = useRef()
+  const windowHeight = window.innerHeight
+  const openHeight = windowHeight * NAV_PERCENT
 
   const [styleProps, set] = useSpring(() => ({
     y: 0,
-    top: overflowHeight,
     config: {
       mass: 1,
       tension: 350,
       friction: 40
     }
   }))
-
   useEffect(() => {
     set({ top: overflowHeight })
   }, [overflowHeight, set])
 
-  const windowHeight = window.innerHeight
-
-  const useDragBind = useDrag(({ down, movement, cancel, event }) => {
-    if (event.persist) {
-      event.persist()
-      if (event.target && !draggingOnHandle(event.target)) {
-        cancel()
-      }
-    }
-    const { top } = refContainer.current.getBoundingClientRect()
-    let setTop = overflowHeight
-    let setY = movement[1]
-    const percentOverflow = (overflowHeight * 100) / windowHeight
-    const percentOpened = ((windowHeight - top) / windowHeight) * 100
-
-    // If not down -> if release pull
-    if (!down) {
-      // If already open and percent opened is less than the opened percentage + 10
-      // Else let open
-      if (open) {
-        if (percentOpened < OPEN_NAV_SIZE * 100 - 10) {
-          setY = 0
-          setOpen(false)
-          if (onChange) onChange(false)
+  const y0 = useRef()
+  const useDragBind = useDrag(
+    ({ first, last, movement: [mx, my], cancel, event }) => {
+      // Could check if you really only want to drag on drag elem
+      // if (event.persist) {
+      //   event.persist()
+      //   if (event.target && !draggingOnHandle(event.target)) {
+      //     cancel()
+      //   }
+      // }
+      if (first)
+        y0.current = Number(
+          refContainer.current.style.transform.split('(')[1].split('px')[0]
+        )
+      const openY = -(openHeight - overflowHeight)
+      const closeY = 0
+      const max = overflowHeight - 10 // near bottom of screen
+      const min = openY - 10
+      let y = clamp(my + y0.current, min, max)
+      if (last) {
+        const threshold = clamp(windowHeight * 0.1, 5, 300)
+        if (open) {
+          if (y > openY + threshold) {
+            setOpen(false)
+            y = closeY
+          } else {
+            y = openY
+          }
         } else {
-          setY = -OPEN_NAV_SIZE * windowHeight
-          setTop = 0
+          if (y < closeY - threshold) {
+            setOpen(true)
+            y = openY
+          } else y = closeY
         }
-        // If not open and open more than 5% of overflow then open it
-        // Else stay closed
-      } else if (percentOpened > percentOverflow + 5) {
-        setY = -OPEN_NAV_SIZE * windowHeight
-        setTop = 0
-        setOpen(true)
-        if (onChange) onChange(true)
-      } else {
-        setY = 0
       }
-    } else {
-      // If is pulling and pull to bottom or top more than 2% then cancel
-      // If is pulling and open, set top to opened value
-      if (open) {
-        setTop = OPEN_NAV_SIZE * windowHeight
-      }
-      if (percentOpened < 0 || percentOpened > OPEN_NAV_SIZE * 100 + 2) {
-        cancel()
-      }
+      set({ y })
     }
-    set({
-      y: setY,
-      top: setTop
-    })
-  })
+  )
 
   return (
     <Container
@@ -107,9 +102,9 @@ const DragDrawer = ({
       ref={refContainer}
       {...useDragBind()}
       style={{
-        height: OPEN_NAV_SIZE * windowHeight,
-        transform: styleProps.y.interpolate((y) => `translateY(${y}px)`),
-        top: styleProps.top.interpolate((px) => `calc(100% - ${px}px)`),
+        top: windowHeight - overflowHeight,
+        height: openHeight,
+        transform: styleProps.y.to((y) => `translateY(${y}px)`),
         ...style
       }}
     >
