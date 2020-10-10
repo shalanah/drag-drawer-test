@@ -3,22 +3,11 @@ import { useSpring, animated } from 'react-spring'
 import { useDrag } from 'react-use-gesture'
 import styled from 'styled-components'
 
-const windowHeight = window.innerHeight
 const OPEN_NAV_SIZE = 0.75
-
 const Container = styled(animated.div)`
   position: absolute;
   width: 100%;
-  max-height: ${OPEN_NAV_SIZE * windowHeight}px;
   height: 100%;
-  &:after {
-    content: '';
-    position: absolute;
-    bottom: -${windowHeight * 0.04}px;
-    height: ${windowHeight * 0.04}px;
-    width: 100%;
-    background-color: ${({ backgroundColor }) => backgroundColor || '#c3cfe2'};
-  }
 `
 const dragClassName = 'drag-drawer-container'
 const draggingOnHandle = (element) => {
@@ -56,7 +45,9 @@ const DragDrawer = ({
 
   useEffect(() => {
     set({ top: overflowHeight })
-  }, [overflowHeight])
+  }, [overflowHeight, set])
+
+  const windowHeight = window.innerHeight
 
   const useDragBind = useDrag(({ down, movement, cancel, event }) => {
     if (event.persist) {
@@ -122,7 +113,7 @@ const DragDrawer = ({
       }}
     >
       <div className={dragClassName}>{dragElem}</div>
-      {content}
+      <div style={{ overflowY: 'scroll', height: '100%' }}>{content}</div>
     </Container>
   )
 }
