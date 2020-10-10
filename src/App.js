@@ -28,6 +28,7 @@ const App = () => {
             content
           </div>
         }
+        footer={<div style={{ height: 200, background: '#fff' }} />}
       />
     </MainContainer>
   )

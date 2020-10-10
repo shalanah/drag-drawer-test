@@ -26,6 +26,7 @@ const DragDrawer = ({
   overflowHeight,
   onChange,
   dragElem,
+  footer,
   style = {},
   ...props
 }) => {
@@ -114,6 +115,7 @@ const DragDrawer = ({
     >
       <div className={dragClassName}>{dragElem}</div>
       <div style={{ overflowY: 'scroll', flex: 1 }}>{content}</div>
+      {footer && <div>{footer}</div>}
     </Container>
   )
 }
