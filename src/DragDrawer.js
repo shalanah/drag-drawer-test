@@ -29,8 +29,6 @@ const DragDrawer = ({
   style = {},
   ...props
 }) => {
-  const trans = (y) => `translateY(${y}px)`
-  const topInterpolate = (px) => `calc(100% - ${px}px)`
   const [open, setOpen] = useState(false)
   const refContainer = useRef()
 
@@ -109,8 +107,8 @@ const DragDrawer = ({
       {...useDragBind()}
       style={{
         height: OPEN_NAV_SIZE * windowHeight,
-        transform: styleProps.y.interpolate(trans),
-        top: styleProps.top.interpolate(topInterpolate),
+        transform: styleProps.y.interpolate((y) => `translateY(${y}px)`),
+        top: styleProps.top.interpolate((px) => `calc(100% - ${px}px)`),
         ...style
       }}
     >
