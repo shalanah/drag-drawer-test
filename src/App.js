@@ -14,8 +14,8 @@ const App = () => {
       <span>here</span>
       <DragDrawer
         style={{ background: '#ccc', zIndex: 100 }}
-        overflowHeight={200}
-        dragElem={<div style={{ padding: '20px' }}>Pull here</div>}
+        closedHeight={200}
+        dragElem={<div style={{ padding: '20px', height: 200 }}>Pull here</div>}
         content={
           <div
             style={{

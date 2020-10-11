@@ -3,7 +3,7 @@ import { useSpring, animated } from 'react-spring'
 import { useDrag } from 'react-use-gesture'
 import styled from 'styled-components'
 
-const NAV_PERCENT = 0.75
+const NAV_PERCENT = 0.8
 const Container = styled(animated.div)`
   position: absolute;
   width: 100%;
@@ -13,28 +13,28 @@ const Container = styled(animated.div)`
 `
 
 const clamp = (num, min, max) => Math.max(Math.min(max, num), min)
-// const dragClassName = 'drag-drawer-container'
-// const draggingOnHandle = (element) => {
-//   let dragElems = document.getElementsByClassName(dragClassName)
-//   const len = dragElems.length
-//   for (let i = 0; i < len; i++) {
-//     let dragElem = dragElems[i]
-//     if (dragElem === element || dragElem.contains(element)) {
-//       // release elements from memory for good measure (possibly not needed)
-//       dragElems = null
-//       dragElem = null
-//       return true // is the drag element or a child of the drag element
-//     }
-//     dragElem = null
-//   }
-//   // release elements from memory for good measure (possibly not needed)
-//   dragElems = null
-//   return false
-// }
+const dragClassName = 'drag-drawer-container'
+const draggingOnHandle = (element) => {
+  let dragElems = document.getElementsByClassName(dragClassName)
+  const len = dragElems.length
+  for (let i = 0; i < len; i++) {
+    let dragElem = dragElems[i]
+    if (dragElem === element || dragElem.contains(element)) {
+      // release elements from memory for good measure (possibly not needed)
+      dragElems = null
+      dragElem = null
+      return true // is the drag element or a child of the drag element
+    }
+    dragElem = null
+  }
+  // release elements from memory for good measure (possibly not needed)
+  dragElems = null
+  return false
+}
 
 const DragDrawer = ({
   content,
-  overflowHeight,
+  closedHeight,
   onChange,
   dragElem,
   footer,
@@ -48,7 +48,7 @@ const DragDrawer = ({
 
   const config = { mass: 1, tension: 130, friction: 24 }
   const [animProps, set] = useSpring(() => ({
-    y: openHeight - overflowHeight,
+    y: openHeight - closedHeight,
     immediate: true,
     config
   }))
@@ -57,18 +57,18 @@ const DragDrawer = ({
   const dragEvents = useDrag(
     ({ first, last, movement: [mx, my], cancel, event, vxvy: [vx, vy] }) => {
       // Could check if you really only want to drag on drag elem
-      // if (event.persist) {
-      //   event.persist()
-      //   if (event.target && !draggingOnHandle(event.target)) {
-      //     cancel()
-      //   }
-      // }
+      if (event.persist) {
+        event.persist()
+        if (event.target && !draggingOnHandle(event.target)) {
+          cancel()
+        }
+      }
       if (first)
         y0.current = Number(
           refContainer.current.style.transform.split('(')[1].split('px')[0]
         )
       const openY = 0
-      const closeY = openHeight - overflowHeight
+      const closeY = openHeight - closedHeight
       const min = openY
       const max = openHeight - 20 // don't want to go below screen
       let immediate = true
@@ -115,11 +115,7 @@ const DragDrawer = ({
       {...dragEvents()}
       {...props}
     >
-      <div
-      // className={dragClassName}
-      >
-        {dragElem}
-      </div>
+      <div className={dragClassName}>{dragElem}</div>
       <div style={{ overflowY: 'scroll', flex: 1 }}>{content}</div>
       {footer && <div>{footer}</div>}
     </Container>
