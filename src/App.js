@@ -14,8 +14,8 @@ const App = () => {
       <span>here</span>
       <DragDrawer
         style={{ background: '#ccc', zIndex: 100 }}
-        closedHeight={200}
-        dragElem={<div style={{ padding: '20px', height: 200 }}>Pull here</div>}
+        closedHeight={110}
+        dragElem={<div style={{ padding: '20px', height: 110 }}>Pull here</div>}
         content={
           <div
             style={{
@@ -28,7 +28,7 @@ const App = () => {
             content
           </div>
         }
-        footer={<div style={{ height: 200, background: 'blue' }} />}
+        footer={<div style={{ height: 111, background: 'blue' }} />}
       />
     </MainContainer>
   )
