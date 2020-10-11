@@ -25,10 +25,14 @@ const App = () => {
                 'linear-gradient(#ccc, red, orange, yellow, green, cyan, blue, violet, black)'
             }}
           >
-            content
+            Scrollable content
           </div>
         }
-        footer={<div style={{ height: 60, background: 'blue' }} />}
+        footer={
+          <div style={{ height: 60, padding: '20px', background: 'blue' }}>
+            Footer buttons
+          </div>
+        }
       />
     </MainContainer>
   )

@@ -10,36 +10,22 @@ const Container = styled(animated.div)`
   display: flex;
   flex-direction: column;
   bottom: 0px;
-  &:after {
-    /* Bounce help */
-    content: '';
-    position: absolute;
-    height: 20vh;
-    width: 100%;
-    top: 100%;
-    left: 0;
-    background: orange;
-  }
 `
 
 const clamp = (num, min, max) => Math.max(Math.min(max, num), min)
 const dragClassName = 'drag-drawer-container'
 const draggingOnHandle = (element) => {
   let dragElems = document.getElementsByClassName(dragClassName)
+  let isDragging = false
   const len = dragElems.length
   for (let i = 0; i < len; i++) {
     let dragElem = dragElems[i]
-    if (dragElem === element || dragElem.contains(element)) {
-      // release elements from memory for good measure (possibly not needed)
-      dragElems = null
-      dragElem = null
-      return true // is the drag element or a child of the drag element
-    }
-    dragElem = null
+    isDragging = dragElem === element || dragElem.contains(element)
+    dragElem = null // release to be overly cautious
+    if (isDragging) break
   }
-  // release elements from memory for good measure (possibly not needed)
-  dragElems = null
-  return false
+  dragElems = null // release to be overly cautious
+  return isDragging
 }
 
 const handleDrag = ({
@@ -58,8 +44,16 @@ const handleDrag = ({
   movement: [mx, my],
   cancel,
   first,
-  last
+  last,
+  refScrollContainer
 }) => {
+  if (
+    refScrollContainer?.current &&
+    refScrollContainer?.current.scrollTop !== 0
+  ) {
+    // Do not go up or down if scroll area isn't at top
+    cancel()
+  }
   if (event.persist) {
     event.persist()
     if (event.target && !draggingOnHandle(event.target)) {
@@ -77,6 +71,7 @@ const handleDrag = ({
   let immediate = true
   let y = clamp(my + y0.current, min, max)
   let velocity = 0
+  // Snapping to open or closed
   if (last) {
     immediate = false // will animate
     velocity = vy
@@ -100,7 +95,7 @@ const handleDrag = ({
     config: {
       ...config,
       velocity,
-      clamp: false //y < closeY
+      clamp: y < closeY
     },
     immediate
   })
@@ -117,10 +112,15 @@ const DragDrawer = ({
 }) => {
   const [open, setOpen] = useState(false)
   const refContainer = useRef()
+  const refScrollContainer = useRef()
   const windowHeight = window.innerHeight
   const openHeight = windowHeight * NAV_PERCENT
 
-  const config = { mass: 1, tension: 200, friction: 20 }
+  const config = {
+    mass: 1,
+    tension: 400,
+    friction: 35 /* since we are mostly clamping, want to close pretty quickly */
+  }
   const [animProps, set] = useSpring(() => ({
     y: openHeight - closedHeight,
     immediate: true,
@@ -139,7 +139,8 @@ const DragDrawer = ({
       setOpen,
       y0,
       open,
-      config
+      config,
+      refScrollContainer
     })
   )
 
@@ -155,7 +156,14 @@ const DragDrawer = ({
       {...props}
     >
       <div className={dragClassName}>{dragElem}</div>
-      <div style={{ overflowY: 'scroll', flex: 1, overscrollBehavior: 'none' }}>
+      <div
+        ref={refScrollContainer}
+        className={dragClassName}
+        style={{ overflowY: 'scroll', flex: 1 }}
+        onPointerMove={(e) => {
+          e.preventDefault() // try to stop safari bounce
+        }}
+      >
         {content}
       </div>
       {footer && <div>{footer}</div>}
