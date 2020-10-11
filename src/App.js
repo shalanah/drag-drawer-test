@@ -4,7 +4,7 @@ import DragDrawer from './DragDrawer'
 
 const MainContainer = styled.div`
   position: relative;
-  height: 100vh;
+  height: 100%;
   overflow: hidden;
 `
 
