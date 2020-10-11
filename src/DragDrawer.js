@@ -10,6 +10,16 @@ const Container = styled(animated.div)`
   display: flex;
   flex-direction: column;
   bottom: 0px;
+  &:after {
+    /* Bounce help */
+    content: '';
+    position: absolute;
+    height: 20vh;
+    width: 100%;
+    top: 100%;
+    left: 0;
+    background: orange;
+  }
 `
 
 const clamp = (num, min, max) => Math.max(Math.min(max, num), min)
@@ -90,7 +100,7 @@ const handleDrag = ({
     config: {
       ...config,
       velocity,
-      clamp: true //y > closeY
+      clamp: false //y < closeY
     },
     immediate
   })
@@ -110,7 +120,7 @@ const DragDrawer = ({
   const windowHeight = window.innerHeight
   const openHeight = windowHeight * NAV_PERCENT
 
-  const config = { mass: 1, tension: 200, friction: 24 }
+  const config = { mass: 1, tension: 200, friction: 20 }
   const [animProps, set] = useSpring(() => ({
     y: openHeight - closedHeight,
     immediate: true,

@@ -28,7 +28,7 @@ const App = () => {
             content
           </div>
         }
-        footer={<div style={{ height: 111, background: 'blue' }} />}
+        footer={<div style={{ height: 60, background: 'blue' }} />}
       />
     </MainContainer>
   )
