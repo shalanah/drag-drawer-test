@@ -32,6 +32,70 @@ const draggingOnHandle = (element) => {
   return false
 }
 
+const handleDrag = ({
+  refContainer,
+  openHeight,
+  closedHeight,
+  set,
+  windowHeight,
+  setOpen,
+  open,
+  config,
+  y0,
+  // args
+  event,
+  vxvy: [vx, vy],
+  movement: [mx, my],
+  cancel,
+  first,
+  last
+}) => {
+  if (event.persist) {
+    event.persist()
+    if (event.target && !draggingOnHandle(event.target)) {
+      cancel()
+    }
+  }
+  if (first)
+    y0.current = Number(
+      refContainer.current.style.transform.split('(')[1].split('px')[0]
+    )
+  const openY = 0
+  const closeY = openHeight - closedHeight
+  const min = openY
+  const max = openHeight - 20 // don't want to go below screen
+  let immediate = true
+  let y = clamp(my + y0.current, min, max)
+  let velocity = 0
+  if (last) {
+    immediate = false // will animate
+    velocity = vy
+    const threshold = clamp(windowHeight * 0.1, 5, 300)
+    if (open) {
+      if (y > openY + threshold) {
+        setOpen(false)
+        y = closeY
+      } else {
+        y = openY
+      }
+    } else {
+      if (y < closeY - threshold) {
+        setOpen(true)
+        y = openY
+      } else y = closeY
+    }
+  }
+  set({
+    y,
+    config: {
+      ...config,
+      velocity,
+      clamp: true //y > closeY
+    },
+    immediate
+  })
+}
+
 const DragDrawer = ({
   content,
   closedHeight,
@@ -46,7 +110,7 @@ const DragDrawer = ({
   const windowHeight = window.innerHeight
   const openHeight = windowHeight * NAV_PERCENT
 
-  const config = { mass: 1, tension: 130, friction: 24 }
+  const config = { mass: 1, tension: 200, friction: 24 }
   const [animProps, set] = useSpring(() => ({
     y: openHeight - closedHeight,
     immediate: true,
@@ -54,54 +118,19 @@ const DragDrawer = ({
   }))
 
   const y0 = useRef()
-  const dragEvents = useDrag(
-    ({ first, last, movement: [mx, my], cancel, event, vxvy: [vx, vy] }) => {
-      // Could check if you really only want to drag on drag elem
-      if (event.persist) {
-        event.persist()
-        if (event.target && !draggingOnHandle(event.target)) {
-          cancel()
-        }
-      }
-      if (first)
-        y0.current = Number(
-          refContainer.current.style.transform.split('(')[1].split('px')[0]
-        )
-      const openY = 0
-      const closeY = openHeight - closedHeight
-      const min = openY
-      const max = openHeight - 20 // don't want to go below screen
-      let immediate = true
-      let y = clamp(my + y0.current, min, max)
-      let velocity = 0
-      if (last) {
-        immediate = false // will animate
-        velocity = vy
-        const threshold = clamp(windowHeight * 0.1, 5, 300)
-        if (open) {
-          if (y > openY + threshold) {
-            setOpen(false)
-            y = closeY
-          } else {
-            y = openY
-          }
-        } else {
-          if (y < closeY - threshold) {
-            setOpen(true)
-            y = openY
-          } else y = closeY
-        }
-      }
-      set({
-        y,
-        config: {
-          ...config,
-          velocity,
-          clamp: true //y > closeY
-        },
-        immediate
-      })
-    }
+  const dragEvents = useDrag((useDragArgs) =>
+    handleDrag({
+      ...useDragArgs,
+      refContainer,
+      openHeight,
+      closedHeight,
+      set,
+      windowHeight,
+      setOpen,
+      y0,
+      open,
+      config
+    })
   )
 
   return (
@@ -116,7 +145,9 @@ const DragDrawer = ({
       {...props}
     >
       <div className={dragClassName}>{dragElem}</div>
-      <div style={{ overflowY: 'scroll', flex: 1 }}>{content}</div>
+      <div style={{ overflowY: 'scroll', flex: 1, overscrollBehavior: 'none' }}>
+        {content}
+      </div>
       {footer && <div>{footer}</div>}
     </Container>
   )
