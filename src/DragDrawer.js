@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { useSpring, animated } from 'react-spring'
 import { useDrag } from 'react-use-gesture'
 import styled from 'styled-components'
@@ -10,6 +10,7 @@ const Container = styled(animated.div)`
   display: flex;
   flex-direction: column;
   bottom: 0px;
+  border-radius: 10px 10px 0 0;
 `
 
 const clamp = (num, min, max) => Math.max(Math.min(max, num), min)
@@ -49,7 +50,7 @@ const handleDrag = ({
 }) => {
   if (
     refScrollContainer?.current &&
-    refScrollContainer?.current.scrollTop !== 0
+    refScrollContainer?.current.scrollTop > 0
   ) {
     // Do not go up or down if scroll area isn't at top
     cancel()
@@ -159,7 +160,10 @@ const DragDrawer = ({
       <div
         ref={refScrollContainer}
         className={dragClassName}
-        style={{ overflowY: 'scroll', flex: 1 }}
+        style={{
+          overflowY: 'scroll',
+          flex: 1
+        }}
         onPointerMove={(e) => {
           e.preventDefault() // try to stop safari bounce
         }}
