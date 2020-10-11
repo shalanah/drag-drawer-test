@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef } from 'react'
 import { useSpring, animated } from 'react-spring'
 import { useDrag } from 'react-use-gesture'
 import styled from 'styled-components'
@@ -46,21 +46,16 @@ const DragDrawer = ({
   const windowHeight = window.innerHeight
   const openHeight = windowHeight * NAV_PERCENT
 
-  const [styleProps, set] = useSpring(() => ({
+  const config = { mass: 1, tension: 130, friction: 24 }
+  const [animProps, set] = useSpring(() => ({
     y: openHeight - overflowHeight,
-    config: {
-      mass: 1,
-      tension: 350,
-      friction: 40
-    }
+    immediate: true,
+    config
   }))
-  useEffect(() => {
-    set({ top: overflowHeight })
-  }, [overflowHeight, set])
 
   const y0 = useRef()
-  const useDragBind = useDrag(
-    ({ first, last, movement: [mx, my], cancel, event }) => {
+  const dragEvents = useDrag(
+    ({ first, last, movement: [mx, my], cancel, event, vxvy: [vx, vy] }) => {
       // Could check if you really only want to drag on drag elem
       // if (event.persist) {
       //   event.persist()
@@ -74,10 +69,14 @@ const DragDrawer = ({
         )
       const openY = 0
       const closeY = openHeight - overflowHeight
-      const min = openY - 20
-      const max = openHeight - 20
+      const min = openY
+      const max = openHeight - 20 // don't want to go below screen
+      let immediate = true
       let y = clamp(my + y0.current, min, max)
+      let velocity = 0
       if (last) {
+        immediate = false // will animate
+        velocity = vy
         const threshold = clamp(windowHeight * 0.1, 5, 300)
         if (open) {
           if (y > openY + threshold) {
@@ -93,20 +92,28 @@ const DragDrawer = ({
           } else y = closeY
         }
       }
-      set({ y })
+      set({
+        y,
+        config: {
+          ...config,
+          velocity,
+          clamp: true //y > closeY
+        },
+        immediate
+      })
     }
   )
 
   return (
     <Container
-      {...props}
       ref={refContainer}
-      {...useDragBind()}
       style={{
         height: openHeight,
-        transform: styleProps.y.to((y) => `translateY(${y}px)`),
+        transform: animProps.y.to((y) => `translateY(${y}px)`),
         ...style
       }}
+      {...dragEvents()}
+      {...props}
     >
       <div
       // className={dragClassName}
