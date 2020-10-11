@@ -5,11 +5,12 @@ import styled from 'styled-components'
 
 const NAV_PERCENT = 0.8
 const Container = styled(animated.div)`
-  position: absolute;
+  position: fixed;
   width: 100%;
   display: flex;
   flex-direction: column;
   bottom: 0px;
+  left: 0;
   border-radius: 10px 10px 0 0;
 `
 
