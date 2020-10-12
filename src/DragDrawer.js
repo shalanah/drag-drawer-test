@@ -19,52 +19,49 @@ const config = {
   friction: 35 /* since we are mostly clamping, want to close pretty quickly */
 }
 const Handle = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 1px;
-  background-color: #ccc;
-  transition: 0.05s;
-  :after {
-    position: absolute;
-    content: '';
-    width: 100px;
-    height: 8px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    background: #fff;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-  }
+  width: 24px;
+  height: 3px;
+  background: #e7e8e9;
+  border-radius: 3px;
 `
 
 const handleDrag = ({
   args: [
-    { refScrollContainer, refContainer, openY, closeY, set, setOpen, open }
+    {
+      refScrollContainer,
+      refContainer,
+      openY,
+      closeY,
+      set,
+      setOpen,
+      open,
+      refClickContainer
+    }
   ],
   memo,
   vxvy: [vx, vy],
   movement: [mx, my],
   cancel,
-  last
+  last,
+  event
 }) => {
   if (
     refScrollContainer?.current &&
-    refScrollContainer?.current.scrollTop > 0
+    refScrollContainer?.current.scrollTop > 20
   ) {
     // Do not go up or down if scroll area isn't at top
+    if (event.persist) event.persist() // allow to access event later however
     cancel()
   }
   if (!memo) {
     // Get current Y translation
-    memo = Number(
-      refContainer.current.style.transform.split('(')[1].split('px')[0]
-    )
+    memo = {
+      y0: Number(refContainer.current.style.transform.match(/[\d|.]+/i))
+    } // get number in transform y
   }
+  memo.dragged = memo.dragged || my !== 0
   let immediate = true // will not animate (follows finger)
-  let y = clamp(my + memo, openY, closeY)
+  let y = clamp(my + memo.y0, openY, closeY)
   let velocity = 0 // default
   let onRest
 
@@ -72,19 +69,38 @@ const handleDrag = ({
   if (last) {
     immediate = false // will animate
     velocity = vy
-    const threshold = clamp(window.innerHeight * 0.1, 5, 300) // do we really need window height?
-    if (open) {
-      if (y > openY + threshold) {
+    if (
+      !memo.dragged &&
+      refClickContainer?.current &&
+      event.target &&
+      refClickContainer.current.contains(event.target)
+    ) {
+      // This is a click!!!
+      if (open) {
+        refScrollContainer.current.scrollTop = 0 // just in case
         onRest = () => setOpen(false)
         y = closeY
       } else {
+        onRest = () => setOpen(true)
         y = openY
       }
     } else {
-      if (y < closeY - threshold) {
-        onRest = () => setOpen(true)
-        y = openY
-      } else y = closeY
+      // Animate back to closed or open
+      const threshold = clamp(Math.abs(closeY - openY) * 0.05, 5, 300)
+      if (open) {
+        if (y > openY + threshold) {
+          refScrollContainer.current.scrollTop = 0 // just in case
+          onRest = () => setOpen(false)
+          y = closeY
+        } else {
+          y = openY
+        }
+      } else {
+        if (y < closeY - threshold) {
+          onRest = () => setOpen(true)
+          y = openY
+        } else y = closeY
+      }
     }
   }
   set({
@@ -96,22 +112,25 @@ const handleDrag = ({
     immediate,
     onRest
   })
-  return memo // start position for memo
+  return memo // Data we want to hold onto
 }
 
 const DragDrawer = ({
   content,
+  clickContent,
   openHeight,
   closedHeight,
   onChange,
-  dragElem,
   footer,
+  topContent,
   style = {},
   ...props
 }) => {
   const [open, setOpen] = useState(false)
   const refContainer = useRef()
+  const refClickContainer = useRef()
   const refScrollContainer = useRef()
+  const isDragging = useRef(false)
   const openY = 0
   const closeY = openHeight - closedHeight
   // Default behavior
@@ -121,6 +140,7 @@ const DragDrawer = ({
     config
   }))
   const dragEvents = useDrag(handleDrag)
+
   // Click outside when open will close drawer
   useEffect(() => {
     const closeDrawer = (e) => {
@@ -145,18 +165,6 @@ const DragDrawer = ({
   }, [open, refContainer, refScrollContainer, closeY, set])
   return (
     <Container
-      onClick={() => {
-        if (!open) {
-          set({
-            y: openY,
-            config,
-            immediate: false,
-            onRest: () => {
-              setOpen(true)
-            }
-          })
-        }
-      }}
       ref={refContainer}
       style={{
         height: openHeight,
@@ -166,24 +174,29 @@ const DragDrawer = ({
       {...props}
     >
       <div
-        {...dragEvents({
-          refContainer,
-          openY,
-          closeY,
-          set,
-          setOpen,
-          open,
-          refScrollContainer
-        })}
+        {...dragEvents(
+          {
+            refContainer,
+            openY,
+            closeY,
+            set,
+            setOpen,
+            open,
+            refScrollContainer,
+            refClickContainer
+          },
+          { delay: true }
+        )}
         ref={refScrollContainer}
         style={{
           overflowY: 'scroll',
           flex: 1
         }}
       >
-        <Handle
-          style={{ opacity: open ? 0 : 1, pointerEvents: open ? 'none' : '' }}
-        />
+        <div style={{ display: 'flex' }}>
+          <Handle style={{ margin: '5px auto' }} />
+        </div>
+        <div ref={refClickContainer}>{clickContent}</div>
         {content}
       </div>
       {footer && <div>{footer}</div>}

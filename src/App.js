@@ -5,11 +5,23 @@ import DragDrawer from './DragDrawer'
 const MainContainer = styled.div`
   height: 100%;
   overflow: hidden;
-  background: #efefef;
+  background: #f5f5f5;
   padding: 20px;
 `
 const closedHeight = 120
-
+const DragDrawerTop = () => {
+  return (
+    <div
+      style={{
+        padding: '20px',
+        height: closedHeight,
+        background: '#fff'
+      }}
+    >
+      Click content
+    </div>
+  )
+}
 const DragDrawerContent = () => {
   return (
     <div
@@ -17,7 +29,7 @@ const DragDrawerContent = () => {
         padding: '20px',
         height: '200vh',
         background:
-          'linear-gradient(#fff, #fff, red, orange, yellow, green, cyan, blue)'
+          'linear-gradient(#fff,  red, orange, yellow, green, cyan, blue)'
       }}
     >
       Scrollable content
@@ -48,6 +60,7 @@ const App = () => {
         style={{ background: '#fff', zIndex: 100 }}
         openHeight={winHeight - 200}
         closedHeight={closedHeight}
+        clickContent={<DragDrawerTop />} // Top clickable area
         content={<DragDrawerContent />}
         footer={<DragDrawerFooter />}
       />
