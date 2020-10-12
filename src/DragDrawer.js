@@ -177,7 +177,6 @@ const DragDrawer = ({
         })}
         ref={refScrollContainer}
         style={{
-          scrollBehavior: 'smooth', // for when we need to force back to the top
           overflowY: 'scroll',
           flex: 1
         }}
