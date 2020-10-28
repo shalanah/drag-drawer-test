@@ -8,17 +8,28 @@ const MainContainer = styled.div`
   background: #f5f5f5;
   padding: 20px;
 `
-const closedHeight = 120
-const DragDrawerTop = () => {
+const DragDrawerTop = ({ style }) => {
   return (
     <div
       style={{
         padding: '20px',
-        height: closedHeight,
-        background: '#fff'
+        background: '#fff',
+        ...style
       }}
     >
       Click content
+      <input
+        onMouseDown={(e) => {
+          e.stopPropagation()
+        }}
+        onTouchStart={(e) => {
+          e.stopPropagation()
+        }}
+        type={'number'}
+        min={0}
+        max={20}
+        step={1}
+      />
     </div>
   )
 }
@@ -42,27 +53,32 @@ const DragDrawerFooter = () => {
 
 const App = () => {
   const [winHeight, setWinHeight] = useState(window.innerHeight)
+  const [drawerOpen, setMobileDrawer] = useState(false)
   useEffect(() => {
-    const handleResize = () => {
+    const handleResize = (e) => {
       setWinHeight(window.innerHeight)
     }
+    handleResize()
     window.addEventListener('resize', handleResize)
     return () => {
       window.removeEventListener('resize', handleResize)
     }
-  }, [setWinHeight])
+  }, [setWinHeight, drawerOpen])
+  const closedHeight = 200
+  const openHeight = Math.max(winHeight - 200, winHeight * 0.75)
   return (
     <>
-      <MainContainer>
-        <span>App content</span>
-      </MainContainer>
+      <MainContainer>Main content</MainContainer>
       <DragDrawer
-        style={{ background: '#fff', zIndex: 100 }}
-        openHeight={winHeight - 200}
+        onChange={(open) => {
+          setMobileDrawer(open)
+        }}
+        style={{ zIndex: 100, background: 'white' }}
+        openHeight={openHeight}
         closedHeight={closedHeight}
-        clickContent={<DragDrawerTop />} // Top clickable area
-        content={<DragDrawerContent />}
         footer={<DragDrawerFooter />}
+        clickContent={<DragDrawerTop style={{ height: closedHeight }} />} // Top clickable area
+        content={<DragDrawerContent />}
       />
     </>
   )

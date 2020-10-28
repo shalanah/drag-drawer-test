@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useSpring, animated } from 'react-spring'
 import { useDrag } from 'react-use-gesture'
 import styled from 'styled-components'
+import { handleDrag, useClickOutsideCloseDrawer } from './utils'
+import usePrevious from './usePrevious'
 
 const Container = styled(animated.div)`
   position: fixed;
@@ -11,7 +13,6 @@ const Container = styled(animated.div)`
   bottom: 0px;
   left: 0;
 `
-const clamp = (num, min, max) => Math.max(Math.min(max, num), min)
 const config = {
   mass: 1,
   tension: 400,
@@ -19,102 +20,11 @@ const config = {
   friction: 35 /* since we are mostly clamping, want to close pretty quickly */
 }
 const Handle = styled.div`
-  width: 24px;
+  width: 26px;
   height: 3px;
-  background: #e7e8e9;
+  background: #ccc;
   border-radius: 3px;
 `
-
-const handleDrag = ({
-  args: [
-    {
-      refScrollContainer,
-      refContainer,
-      openY,
-      closeY,
-      set,
-      setOpen,
-      open,
-      refClickContainer
-    }
-  ],
-  memo,
-  vxvy: [vx, vy],
-  movement: [mx, my],
-  cancel,
-  last,
-  event
-}) => {
-  if (
-    refScrollContainer?.current &&
-    refScrollContainer?.current.scrollTop > 20
-  ) {
-    // Do not go up or down if scroll area isn't at top
-    if (event.persist) event.persist() // allow to access event later however
-    cancel()
-  }
-  if (!memo) {
-    // Get current Y translation
-    memo = {
-      y0: Number(refContainer.current.style.transform.match(/[\d|.]+/i))
-    } // get number in transform y
-  }
-  memo.dragged = memo.dragged || my !== 0
-  let immediate = true // will not animate (follows finger)
-  let y = clamp(my + memo.y0, openY, closeY)
-  let velocity = 0 // default
-  let onRest
-
-  // Snapping to open or closed
-  if (last) {
-    immediate = false // will animate
-    velocity = vy
-    if (
-      !memo.dragged &&
-      refClickContainer?.current &&
-      event.target &&
-      refClickContainer.current.contains(event.target)
-    ) {
-      // This is a click!!!
-      if (open) {
-        refScrollContainer.current.scrollTop = 0 // just in case
-        onRest = () => setOpen(false)
-        y = closeY
-      } else {
-        onRest = () => setOpen(true)
-        y = openY
-      }
-    } else {
-      // Animate back to closed or open
-      const threshold = clamp(Math.abs(closeY - openY) * 0.05, 5, 300)
-      if (open) {
-        if (y > openY + threshold) {
-          refScrollContainer.current.scrollTop = 0 // just in case
-          onRest = () => setOpen(false)
-          y = closeY
-        } else {
-          y = openY
-        }
-      } else {
-        if (y < closeY - threshold) {
-          onRest = () => setOpen(true)
-          y = openY
-        } else y = closeY
-      }
-    }
-  }
-  set({
-    y,
-    config: {
-      ...config,
-      velocity
-    },
-    immediate,
-    onRest
-  })
-  return memo // Data we want to hold onto
-}
-
 const DragDrawer = ({
   content,
   clickContent,
@@ -123,6 +33,7 @@ const DragDrawer = ({
   onChange,
   footer,
   topContent,
+  scrollProps: { style: scrollStyle = {}, ...scrollProps } = {},
   style = {},
   ...props
 }) => {
@@ -130,39 +41,59 @@ const DragDrawer = ({
   const refContainer = useRef()
   const refClickContainer = useRef()
   const refScrollContainer = useRef()
-  const isDragging = useRef(false)
   const openY = 0
   const closeY = openHeight - closedHeight
+
+  // For other comp to track changes
+  useEffect(() => {
+    if (onChange) onChange(open)
+  }, [onChange, open])
+
   // Default behavior
   const [animProps, set] = useSpring(() => ({
-    y: openHeight - closedHeight,
+    y: closeY,
     immediate: true, // no animation, just following finger
     config
   }))
-  const dragEvents = useDrag(handleDrag)
 
-  // Click outside when open will close drawer
+  // Reset if heights change
+  const prevOpenHeight = usePrevious(openHeight)
+  const prevClosedHeight = usePrevious(closedHeight)
   useEffect(() => {
-    const closeDrawer = (e) => {
-      if (open && refContainer && !refContainer.current.contains(e.target)) {
-        if (refScrollContainer?.current) {
-          refScrollContainer.current.scrollTop = 0
-        }
-        set({
-          y: closeY,
-          config,
-          immediate: false,
-          onRest: () => {
-            setOpen(false)
-          }
-        })
-      }
+    if (
+      prevOpenHeight !== undefined &&
+      prevClosedHeight !== undefined &&
+      (openHeight !== prevOpenHeight || closedHeight !== prevClosedHeight)
+    ) {
+      // Need to restart some things
+      set({
+        y: open ? openY : closeY,
+        immediate: true, // no animation, just following finger
+        config
+      })
     }
-    window.addEventListener('click', closeDrawer)
-    return () => {
-      window.removeEventListener('click', closeDrawer)
-    }
-  }, [open, refContainer, refScrollContainer, closeY, set])
+  }, [
+    openHeight,
+    closedHeight,
+    prevOpenHeight,
+    prevClosedHeight,
+    open,
+    openY,
+    closeY,
+    set
+  ])
+
+  const dragEvents = useDrag(handleDrag)
+  useClickOutsideCloseDrawer(
+    open,
+    refContainer,
+    refScrollContainer,
+    set,
+    closeY,
+    config,
+    setOpen
+  )
+
   return (
     <Container
       ref={refContainer}
@@ -174,29 +105,42 @@ const DragDrawer = ({
       {...props}
     >
       <div
-        {...dragEvents(
-          {
-            refContainer,
-            openY,
-            closeY,
-            set,
-            setOpen,
-            open,
-            refScrollContainer,
-            refClickContainer
-          },
-          { delay: true }
-        )}
+        {...dragEvents({
+          config,
+          refContainer,
+          openY,
+          closeY,
+          set,
+          setOpen,
+          open,
+          refScrollContainer,
+          refClickContainer
+        })}
         ref={refScrollContainer}
+        {...scrollProps}
         style={{
-          overflowY: 'scroll',
-          flex: 1
+          overflowY: open ? 'scroll' : 'hidden', // don't want to scroll when closed
+          flex: 1,
+          ...scrollStyle
         }}
       >
-        <div style={{ display: 'flex' }}>
-          <Handle style={{ margin: '5px auto' }} />
+        <div
+          ref={refClickContainer}
+          style={{ position: 'relative', zIndex: 10 }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              display: 'flex',
+              width: '100%',
+              top: 0,
+              left: 0
+            }}
+          >
+            <Handle style={{ margin: '5px auto' }} />
+          </div>
+          {clickContent}
         </div>
-        <div ref={refClickContainer}>{clickContent}</div>
         {content}
       </div>
       {footer && <div>{footer}</div>}
