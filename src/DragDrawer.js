@@ -125,10 +125,7 @@ const DragDrawer = ({
           ...scrollStyle
         }}
       >
-        <div
-          ref={refClickContainer}
-          style={{ position: 'relative', zIndex: 10 }}
-        >
+        <div ref={refClickContainer}>
           <div
             style={{
               position: 'absolute',
