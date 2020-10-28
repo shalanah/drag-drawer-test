@@ -125,7 +125,7 @@ const DragDrawer = ({
           ...scrollStyle
         }}
       >
-        <div ref={refClickContainer}>
+        <div ref={refClickContainer} style={{ position: 'relative' }}>
           <div
             style={{
               position: 'absolute',
