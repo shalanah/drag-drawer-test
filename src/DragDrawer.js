@@ -44,7 +44,7 @@ const DragDrawer = ({
   const openY = 0
   const closeY = openHeight - closedHeight
 
-  // For other comp to track changes
+  // For other comps to know when open or closed
   useEffect(() => {
     if (onChange) onChange(open)
   }, [onChange, open])
@@ -56,7 +56,8 @@ const DragDrawer = ({
     config
   }))
 
-  // Reset if heights change
+  // Reset if passed in heights change
+  // - Makes this more elegantly responsive, especially for mobile when text drawer is activated
   const prevOpenHeight = usePrevious(openHeight)
   const prevClosedHeight = usePrevious(closedHeight)
   useEffect(() => {
@@ -65,7 +66,7 @@ const DragDrawer = ({
       prevClosedHeight !== undefined &&
       (openHeight !== prevOpenHeight || closedHeight !== prevClosedHeight)
     ) {
-      // Need to restart some things
+      // Reset position
       set({
         y: open ? openY : closeY,
         immediate: true, // no animation, just following finger
